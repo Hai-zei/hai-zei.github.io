@@ -1,0 +1,143 @@
+
+<!DOCTYPE html>  
+<html lang="zh">  
+<head>  
+    <meta charset="UTF-8">  
+    <title>旋转移动方块动画</title>  
+    <script id="rot-v-shader" type="x-shader/x-vertex">  
+        #version 300 es  
+        in vec4 vPosition;  
+        uniform float theta;  
+        uniform float y_offset;  
+
+        void main()  
+        {  
+            float u = cos(theta);  
+            float v = sin(theta);  
+
+            gl_Position.x = vPosition.x * u - vPosition.y * v;  
+            gl_Position.y = vPosition.x * v + vPosition.y * u + y_offset; // 添加垂直移动  
+            gl_Position.z = 0.0;  
+            gl_Position.w = 1.0;  
+        }  
+    </script>  
+
+    <script id="rot-f-shader" type="x-shader/x-fragment">  
+        #version 300 es  
+        precision mediump float;  
+        out vec4 fColor;  
+
+        void main()  
+        {  
+            fColor = vec4(1.0, 0.0, 0.0, 1.0); // 设置颜色为红色  
+        }  
+    </script>  
+
+    <script type="text/javascript" src="../js/common/webgl-utils.js"></script>  
+    <script type="text/javascript" src="../js/common/initShaders.js"></script>  
+    <script type="text/javascript" src="../js/common/gl-matrix-min.js"></script>  
+    <script type="text/javascript">  
+        "use strict";  
+
+        var canvas;  
+        var gl;  
+        
+        var theta = 0.0; // 旋转角度  
+        var thetaLoc; // 用于传递 theta 到着色器  
+        var yOffset = 0.0; // 垂直偏移量  
+        var direction = 1; // 方向控制  
+        var speed = 50; // 旋转速度，单位为毫秒  
+
+        // 初始化旋转方块  
+        function initRotSquare(){  
+            canvas = document.getElementById("rot-canvas");  
+            gl = canvas.getContext("webgl2");  
+            if(!gl){  
+                alert("WebGL isn't available");  
+                return;  
+            }  
+
+            gl.viewport(0, 0, canvas.width, canvas.height);  
+            gl.clearColor(1.0, 1.0, 1.0, 1.0); // 设置背景颜色为白色  
+
+            var program = initShaders(gl, "rot-v-shader", "rot-f-shader");  
+            gl.useProgram(program);  
+
+            // 定义方块的顶点  
+            var vertices = new Float32Array([  
+                 0,  1,  0,  
+                -1,  0,  0,  
+                 1,  0,  0,  
+                 0, -1,  0  
+            ]);  
+
+            // 创建并绑定缓冲区  
+            var bufferId = gl.createBuffer();  
+            gl.bindBuffer(gl.ARRAY_BUFFER, bufferId);  
+            gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);  
+
+            // 获取并设置顶点属性  
+            var vPosition = gl.getAttribLocation(program, "vPosition");  
+            gl.vertexAttribPointer(vPosition, 3, gl.FLOAT, false, 0, 0);  
+            gl.enableVertexAttribArray(vPosition);  
+
+            thetaLoc = gl.getUniformLocation(program, "theta");  
+            var yOffsetLoc = gl.getUniformLocation(program, "y_offset");  
+
+            // 设置速度控制器  
+            document.getElementById("speedcon").oninput = function(event){  
+                speed = 100 - event.target.value; // 根据输入值设置旋转速度  
+            }  
+
+            // 开始渲染方块  
+            renderSquare(yOffsetLoc);  
+        }  
+
+        // 渲染方块  
+        function renderSquare(yOffsetLoc){  
+            gl.clear(gl.COLOR_BUFFER_BIT);  
+            
+            // 更新旋转角度  
+            theta += 0.05; // 旋转增量  
+            yOffset = Math.sin(theta) * 0.5; // 使用正弦波实现上下移动  
+
+            gl.uniform1f(thetaLoc, theta); // 更新 theta 到着色器中  
+            gl.uniform1f(yOffsetLoc, yOffset); // 更新 yOffset 到着色器中  
+
+            // 绘制方块  
+            gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);  
+
+            // 设定下一帧渲染  
+            setTimeout(function() {  
+                requestAnimFrame(function() { renderSquare(yOffsetLoc); });  
+            }, speed);  
+        }  
+
+    </script>  
+	
+	<style>
+		body{
+			background-color: antiquewhite;
+			font-family:cursive;
+		}
+		#body{
+			text-align: center;
+			width: 800px;
+			margin: auto;
+		}
+		canvas{
+			float: left;
+		}
+	</style>
+	
+</head>  
+<body onload="initRotSquare()"> 
+    <div id="body">
+		<h1>WebGL 旋转移动方块动画</h1>
+		<canvas id="rot-canvas" width="512" height="512">你的浏览器不支持HTML5 canvas元素</canvas><br>  
+		<label for="speedcon">调整速度:</label>  
+		<input id="speedcon" type="range" min="0" max="100" value="50"> 
+	</div>
+     
+</body>  
+</html>

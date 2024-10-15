@@ -1,0 +1,137 @@
+<!DOCTYPE html>  
+<html lang="zh-CN">  
+<head>  
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8">  
+    <title>Sierpinski Gasket</title>  
+    <style>  
+        body {  
+            font-family: Arial, sans-serif;  
+            background-color: #f0f0f0;  
+            margin: 0;  
+            padding: 20px;  
+            display: flex;  
+            justify-content: center;  
+            align-items: center;  
+            height: 100vh;  
+			background-color: antiquewhite;
+        }  
+        h2 {  
+            text-align: center;  
+            color: #333;  
+        }  
+		button{
+			background-color: #857cda;
+		}
+        .container {  
+            display: flex;  
+            flex-direction: row;  
+            align-items: flex-start;  
+            margin-top: 20px;  
+            background-color: #fff;  
+            padding: 20px;  
+            border-radius: 8px;  
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);  
+        }  
+        #triangle-canvas {  
+            margin-right: 20px;  
+            border: 1px solid #ccc;  
+            background-color: #fff;  
+        }  
+        .module {  
+            background-color: #ffffff;  
+            border: 1px solid #ddd;  
+            border-radius: 8px;  
+            padding: 20px;  
+            margin-bottom: 20px;  
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);  
+        }  
+        .module h4 {  
+            margin: 5px 0;  
+        }  
+        .controls {  
+			background-color: aqua;
+            display: flex;  
+            flex-wrap: wrap;  
+            justify-content: flex-start;  
+        }  
+        .controls div {  
+            margin-right: 20px;  
+            margin-bottom: 10px;  
+        }  
+		.selSwitch{
+			background-color: #152469;
+		}
+    </style>  
+    <script id="vertex-shader-2d" type="x-shader/x-vertex">  
+        attribute vec4 vPosition;  
+        void main(){  
+            gl_Position = vPosition;  
+        }  
+    </script>  
+
+    <script id="fragment-shader-2d" type="x-shader/x-fragment">  
+        precision mediump float;  
+        void main(){  
+            gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);  
+        }  
+    </script>  
+    <script id="vertex-shader-3d" type="x-shader/x-vertex">  
+        attribute vec3 vPosition;  
+        attribute vec3 vColor;  
+        varying vec4 color;  
+        void main(){  
+            gl_Position = vec4(vPosition, 1.0);  
+            color = vec4(vColor, 1.0);  
+        }  
+    </script>  
+    <script id="fragment-shader-3d" type="x-shader/x-fragment">  
+        precision mediump float;  
+        varying vec4 color;  
+        void main(){  
+            gl_FragColor = color;  
+        }  
+    </script>  
+	  
+	<script type="text/javascript" src="../js/common/webgl-utils.js"></script>  
+	<script type="text/javascript" src="../js/common/initShaders.js"></script>  
+	<script type="text/javascript" src="../js/common/gl-matrix.js"></script>  
+	<script type="text/javascript" src="../js/ch02/triangle-tessa.js"></script>  
+	  
+</head>  
+<body>  
+    <h2>Sierpinski Gasket 2D / 3D</h2>  
+    <div class="container">  
+        <canvas id="triangle-canvas" width="512" height="512">你的浏览器不支持HTML5 canvas元素</canvas>  
+        <div class="module">  
+            <button id="Cancel" type="button">初始化</button>  
+            <div class="controls">  
+                <div>  
+                    <h4>任务a. 输入剖分的层次(0-7)：</h4>  
+                    <label>层数控件（0~7，初始值为4）：   
+                        <input type="range" id="selNum" min="0" max="7" value="4"/>  
+                    </label>  
+                </div>  
+                <div>  
+                    <h4>任务b. 三维效果：</h4>  
+                    <label>2D <input type="radio" name="shape" value="2d" checked="checked"/></label>  
+                    <label>3D <input type="radio" name="shape" value="3d"/></label>  
+                    <label>线框 <input type="radio" name="shape" value="wire"/></label>  
+                </div>  
+                <button id="selShape" type="button">形状选择：确定</button>  
+            </div>  
+            <hr>  
+            <div class="controls">  
+                <h4>任务d. 旋转效果：</h4>  
+                <label>关 <input type="radio" name="switch" value="2d" checked="checked"/></label>  
+                <label>任务d <input type="radio" name="switch" value="3d"/></label>  
+                <label>任务e <input type="radio" name="switch" value="wire"/></label>  
+                <button id="selSwitch" type="button">旋转选择：确定</button>  
+            </div>  
+            <div>  
+                <h4>旋转角度控制（0~360，初始值为60）：</h4>  
+                <input type="range" id="rotate" min="0" max="360" value="60"/>  
+            </div>  
+        </div>  
+    </div>  
+</body>  
+</html>

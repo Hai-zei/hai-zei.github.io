@@ -1,0 +1,218 @@
+
+
+<!DOCTYPE html>  
+<html lang="zh">  
+<head>  
+    <meta charset="UTF-8">  
+    <title>变换方块演示</title>  
+    <script id="rot-v-shader" type="x-shader/x-vertex">  
+        #version 300 es  
+        in vec4 vPosition;  
+        uniform float thetaX;  
+        uniform float thetaY;  
+        uniform float tx;  
+        uniform float ty;  
+        uniform float scaleX;  
+        uniform float scaleY;  
+
+        void main() {  
+            // 缩放变换  
+            vec4 scaledPosition = vec4(vPosition.x * scaleX, vPosition.y * scaleY, vPosition.z, 1.0);  
+            
+            // 绕X轴旋转  
+            float cosThetaX = cos(thetaX);  
+            float sinThetaX = sin(thetaX);  
+            scaledPosition.y = scaledPosition.y * cosThetaX - scaledPosition.z * sinThetaX;  
+            scaledPosition.z = scaledPosition.y * sinThetaX + scaledPosition.z * cosThetaX;  
+
+            // 绕Y轴旋转  
+            float cosThetaY = cos(thetaY);  
+            float sinThetaY = sin(thetaY);  
+            scaledPosition.x = scaledPosition.x * cosThetaY + scaledPosition.z * sinThetaY;  
+            scaledPosition.z = -scaledPosition.x * sinThetaY + scaledPosition.z * cosThetaY;  
+
+            // 平移  
+            gl_Position = scaledPosition + vec4(tx, ty, 0.0, 0.0);  
+        }  
+    </script>  
+
+    <script id="rot-f-shader" type="x-shader/x-fragment">  
+        #version 300 es  
+        precision mediump float;  
+        out vec4 fColor;  
+
+        void main() {  
+            fColor = vec4(1.0, 0.0, 0.0, 1.0); // 设置颜色为红色  
+        }  
+    </script>  
+
+    <script type="text/javascript" src="../js/common/webgl-utils.js"></script>  
+    <script type="text/javascript" src="../js/common/initShaders.js"></script>  
+    <script type="text/javascript" src="../js/common/gl-matrix-min.js"></script>  
+    <script type="text/javascript">  
+        "use strict";  
+
+        var canvas;  
+        var gl;  
+
+        var thetaX = 0.0; // 绕X轴旋转角度  
+        var thetaY = 0.0; // 绕Y轴旋转角度  
+        var tx = 0.0;     // X轴平移  
+        var ty = 0.0;     // Y轴平移  
+        var scaleX = 1.0; // X轴缩放  
+        var scaleY = 1.0; // Y轴缩放  
+        var thetaXLoc, thetaYLoc, txLoc, tyLoc, scaleXLoc, scaleYLoc;  
+        var direction = 1; // 旋转方向，1 为顺时针，-1 为逆时针  
+        var speed = 50; // 旋转速度  
+
+        function initRotSquare() {  
+            canvas = document.getElementById("rot-canvas");  
+            gl = canvas.getContext("webgl2");  
+            if (!gl) {  
+                alert("WebGL isn't available");  
+                return;  
+            }  
+
+            gl.viewport(0, 0, canvas.width, canvas.height);  
+            gl.clearColor(1.0, 1.0, 1.0, 1.0); // 设置背景颜色为白色  
+
+            var program = initShaders(gl, "rot-v-shader", "rot-f-shader");  
+            gl.useProgram(program);  
+
+            // 定义方块的顶点  
+            var vertices = new Float32Array([  
+                 0,  1,  0,  
+                -1,  0,  0,  
+                 1,  0,  0,  
+                 0, -1,  0  
+            ]);  
+
+            // 创建并绑定缓冲区  
+            var bufferId = gl.createBuffer();  
+            gl.bindBuffer(gl.ARRAY_BUFFER, bufferId);  
+            gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);  
+
+            // 获取并设置顶点属性  
+            var vPosition = gl.getAttribLocation(program, "vPosition");  
+            gl.vertexAttribPointer(vPosition, 3, gl.FLOAT, false, 0, 0);  
+            gl.enableVertexAttribArray(vPosition);  
+
+            // 获取 uniforms 的位置  
+            thetaXLoc = gl.getUniformLocation(program, "thetaX");  
+            thetaYLoc = gl.getUniformLocation(program, "thetaY");  
+            txLoc = gl.getUniformLocation(program, "tx");  
+            tyLoc = gl.getUniformLocation(program, "ty");  
+            scaleXLoc = gl.getUniformLocation(program, "scaleX");  
+            scaleYLoc = gl.getUniformLocation(program, "scaleY");  
+
+            // 设置速度控制器  
+            document.getElementById("speedcon").oninput = function (event) {  
+                speed = 100 - event.target.value; // 根据输入值设置旋转速度  
+            }  
+
+            // 旋转 控制  
+            document.getElementById("rotateX").oninput = function (event) {  
+                thetaX = event.target.value * Math.PI / 180; // 转换为弧度  
+            }  
+            document.getElementById("rotateY").oninput = function (event) {  
+                thetaY = event.target.value * Math.PI / 180; // 转换为弧度  
+            }  
+
+            // 平移 控制  
+            document.getElementById("translateX").oninput = function (event) {  
+                tx = event.target.value;  
+            }  
+            document.getElementById("translateY").oninput = function (event) {  
+                ty = event.target.value;  
+            }  
+
+            // 缩放 控制  
+            document.getElementById("scaleX").oninput = function (event) {  
+                scaleX = event.target.value;  
+            }  
+            document.getElementById("scaleY").oninput = function (event) {  
+                scaleY = event.target.value;  
+            }  
+
+            // 开始渲染方块  
+            renderSquare();  
+        }  
+
+        // 渲染方块  
+        function renderSquare() {  
+            gl.clear(gl.COLOR_BUFFER_BIT);  
+
+            // 将 uniforms 更新到着色器中  
+            gl.uniform1f(thetaXLoc, thetaX);  
+            gl.uniform1f(thetaYLoc, thetaY);  
+            gl.uniform1f(txLoc, tx);  
+            gl.uniform1f(tyLoc, ty);  
+            gl.uniform1f(scaleXLoc, scaleX);  
+            gl.uniform1f(scaleYLoc, scaleY);  
+
+            // 绘制方块  
+            gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);  
+
+            // 设定下一帧渲染  
+            setTimeout(function () {  
+                requestAnimFrame(renderSquare);  
+            }, speed);  
+        }  
+
+    </script>  
+
+    <style>  
+        body {  
+            background-color: antiquewhite;  
+            font-family: cursive;  
+        }  
+		
+        #body {  
+            text-align: center;  
+            width: 900px;  
+            margin: auto;  
+        }  
+		.o{
+			background-color: #885511;
+			
+			margin: 15px;
+		}
+        canvas {  
+            float: left;  
+            border: 1px solid black;  
+        }  
+    </style>  
+</head>  
+<body onload="initRotSquare()">  
+
+    <div id="body">  
+        <h1>WebGL 变换方块</h1>  
+        <canvas id="rot-canvas" width="512" height="512">你的浏览器不支持HTML5 canvas元素</canvas><br>  
+        <h3>通过滑块调整变换</h3>  
+		<div class="o">
+			<label for="rotateX">绕X轴旋转:</label>
+			<input id="rotateX" type="range" min="-180" max="180" value="0"><br>  
+			<label for="rotateY">绕Y轴旋转:</label>  
+			<input id="rotateY" type="range" min="-180" max="180" value="0"><br>  
+		</div>
+        
+		<div class="o">
+			<label for="translateX">X轴平移:</label>
+			<input id="translateX" type="range" min="-5" max="5" value="0" step="0.1"><br>  
+			<label for="translateY">Y轴平移:</label>  
+			<input id="translateY" type="range" min="-5" max="5" value="0" step="0.1"><br>  
+		</div>
+        
+        <div class="o">
+			<label for="scaleX">X轴缩放:</label>  
+			<input id="scaleX" type="range" min="0.1" max="5" value="1" step="0.1"><br>  
+			<label for="scaleY">Y轴缩放:</label>  
+			<input id="scaleY" type="range" min="0.1" max="5" value="1" step="0.1"><br>  
+		</div>
+        
+        <label for="speedcon">调整速度:</label>  
+        <input id="speedcon" type="range" min="0" max="100" value="50">  
+    </div>  
+
+</body>  
+</html>
