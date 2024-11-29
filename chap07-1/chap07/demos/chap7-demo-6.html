@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <!-- 顶点着色器（用于带纹理的OBJ模型） -->
+    <script id="vshader-objtex" type="x-shader/x-vertex">
+        attribute vec4 vPosition;
+        attribute vec3 vNormal;
+        
+        uniform mat4 modelViewMatrix;
+        uniform mat4 projectionMatrix;
+        uniform mat3 normalMatrix;
+        
+        varying vec4 vertexPos;
+        varying vec3 normalInterp;
+        
+        uniform vec3 zoom;
+        varying vec2 fTexCoord;
+        
+        void main() {
+            mat4 Zoom = mat4(1.0 + zoom[0], 0.0, 0.0, 0.0,
+                              0.0, 1.0 + zoom[1], 0.0, 0.0,
+                              0.0, 0.0, 1.0 + zoom[2], 0.0,
+                              0.0, 0.0, 0.0, 1.0);
+            
+            vertexPos = modelViewMatrix * vPosition;
+            normalInterp = normalize(normalMatrix * vNormal.xyz);
+            gl_Position = projectionMatrix * modelViewMatrix * vertexPos;
+            
+            gl_Position = Zoom * gl_Position;
+            
+            fTexCoord = vec2(vPosition.x, vPosition.y);
+        }
+    </script>
+    <!-- 片元着色器（用于带纹理的OBJ模型） -->
+    <script id="fshader-objtex" type="x-shader/x-fragment">
+        precision mediump float;
+        
+        varying vec4 vertexPos;
+        varying vec3 normalInterp;
+        varying vec2 fTexCoord;
+        
+        uniform vec3 lightPos;
+        
+        uniform vec4 fColor;
+        uniform sampler2D texture;
+        uniform sampler2D texbump;
+        uniform samplerCube texCubemap;
+        
+        uniform float averageBrightness;
+        uniform float maxBrightness;
+        
+        uniform float textureAlpha;
+        uniform float shininess;
+        uniform float bumpDepth;
+        
+        float blackness(vec4 color) {
+            return (3.0 - color.r - color.g - color.b) * color.a * 0.33;
+        }
+        
+        vec3 bump(sampler2D bumpSampler, vec2 coord, vec3 sDirection, vec3 tDirection) {
+            vec2 dx = vec2(1.0 / 256.0, 0.0);
+            vec2 dy = vec2(0.0, 1.0 / 256.0);
+            float color = blackness(texture2D(bumpSampler, coord));
+            float x = (blackness(texture2D(bumpSampler, coord + dx)) - color);
+            float y = (blackness(texture2D(bumpSampler, coord + dy)) - color);
+            
+            return x * sDirection + y * tDirection;
+        }
+        
+        void main() {
+            // 凹凸映射计算
+            vec3 sDirection = vec3(-sin(fTexCoord.s), 0.0, cos(fTexCoord.t));
+            vec3 tDirection = vec3(0.0, 1.0, 0.0);
+            vec3 bumpVal = bump(texbump, fTexCoord, sDirection, tDirection) * bumpDepth;
+            
+            // 反射计算
+            vec3 normal = normalize(normalInterp + bumpVal);
+            vec3 eyevec = normalize(-vertexPos.xyz);
+            vec3 reflection = reflect(eyevec, normal);
+            
+            // 折射计算
+            float iorefr = 0.7519; // 不同介质的折射率示例，此处为水的折射率
+            vec3 refraction = refract(eyevec, normal, 0.9997);
+            
+            // 光照计算
+            vec3 lightvec;
+            lightvec = normalize(lightPos.xyz - vertexPos.xyz);
+            
+            vec4 ambientLight = vec4(0.3, 0.3, 0.3, 0.3);
+            
+            float diffuseFactor = max(dot(lightvec, normal), 0.0);
+            vec4 diffuseLight = vec4(vec3(0.9, 0.9, 0.9) * averageBrightness, 1.0);
+            
+            float specularFactor = 0.0;
+            if (diffuseFactor > 0.0) {
+                vec3 rlight = reflect(-lightvec, normal);
+                float specularAngle = max(dot(rlight, eyevec), 0.0);
+                specularFactor = max(pow(specularAngle, 2.0), 0.0);
+            }
+            vec4 specularLight = vec4(vec3(0.9, 0.9, 0.9) * maxBrightness * 0.5, 1.0);
+            
+            vec4 lightColor = ambientLight + (diffuseLight * diffuseFactor) + (specularLight * specularFactor);
+            
+            vec4 texColor = texture2D(texture, fTexCoord);
+            vec4 texCubeColor = textureCube(texCubemap, reflection);
+            float texalpha = textureAlpha * texColor.a;
+            
+            vec4 reflectColor = textureCube(texCubemap, reflection);
+            
+            vec4 refractColor = textureCube(texCubemap, refraction);
+            refractColor = mix(refractColor, vec4(1.0, 1.0, 1.0, 1.0), 0.3);
+            
+            vec4 surfaceColor = fColor * (1.0 - texalpha) + texColor * texalpha;
+            vec4 finalColor = surfaceColor * lightColor * ((reflectColor * shininess) + (1.0 - shininess));
+            // vec4 finalColor = surfaceColor * lightColor * ((refractColor * shininess) + (1.0 - shininess));
+            // vec4 finalColor = surfaceColor * ((reflectColor * shininess) + (1.0 - shininess));
+            
+            gl_FragColor = finalColor;
+        }
+    </script>
+    <!-- 天空盒的顶点着色器 -->
+    <script id="vshader-skybox" type="x-shader/x-vertex">
+        attribute vec4 vPosition;
+        //attribute vec2 vTexCoords;
+        attribute vec3 vNormal;
+        
+        uniform mat4 modelViewMatrix;
+        uniform mat4 projectionMatrix;
+        varying vec3 fTexCoords;
+        varying vec3 fNormal; // 仅用于存储
+        
+        void main() {
+            vec4 eyePosition = projectionMatrix * modelViewMatrix * vPosition;
+            fNormal = (modelViewMatrix * vec4(vNormal, 1.0)).xyz;
+            gl_Position = eyePosition;
+            fTexCoords = -vPosition.xyz;
+        }
+    </script>
+    <!-- 天空盒的片元着色器 -->
+    <script id="fshader-skybox" type="x-shader/x-fragment">
+        precision mediump float;
+        varying vec3 fTexCoords;
+        varying vec3 fNormal;
+        uniform samplerCube texCubemap;
+        
+        void main() {
+            vec3 normal = normalize(fNormal); // 此处未实际使用
+            gl_FragColor = textureCube(texCubemap, normalize(fTexCoords));
+        }
+    </script>
+    <script type="text/javascript" src="../js/common/webgl-utils.js"></script>
+    <script type="text/javascript" src="../js/common/initShaders.js"></script>
+    <script type="text/javascript" src="../js/common/gl-matrix.js"></script>
+    <script type="text/javascript" src="../js/common/objloader.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="../js/common/ObjRender.js" type="text/javascript" charset="utf-8"></script>
+    <style type="text/css">
+        /* 整体页面布局样式 */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        
+        /* 画布样式 */
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+        
+        /* 选项组样式 */
+        div {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            margin-right: 10px;
+        }
+        
+        /* 单选按钮样式 */
+        input[type="radio"] {
+            margin-right: 5px;
+        }
+        
+        /* 文件选择和颜色选择等输入框样式 */
+        input[type="file"],
+        input[type="color"] {
+            margin-top: 5px;
+        }
+        
+        /* 范围滑块样式 */
+        input[type="range"] {
+            width: 150px;
+        }
+        
+        /* 表格样式 */
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        
+        table td {
+            padding: 8px;
+            border: 1px solid #ccc;
+        }
+        
+        table tr:first-child td {
+            background-color: #f0f0f0;
+            font-weight: bold;
+        }
+        
+        /* 用于隐藏相机位置相关设置的类 */
+      .cameraBox {
+            display: none;
+        }
+        
+        /* 光照变换表格样式 */
+        #beamChange {
+            text-align: center;
+        }
+        
+        #beamChange tr td {
+            padding: 5px;
+        }
+        
+        #beamChange tr td:first-child {
+            text-align: right;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>OBJ Model Rendering and Skybox</h1>
+    <div>
+        <canvas id="gl-canvas" width="800" height="800" style="float: left; margin-right: 10px;">
+            Your browser does not support HTML5 Canvas element.
+        </canvas>
+    </div>
+    <div>
+        <label>Projection Mode:</label>
+        <input type="radio" id="ortho" name="projtype" value="1" checked><label>Orthographic Projection</label>
+        &nbsp;
+        <input type="radio" id="persp" name="projtype" value="2"><label>Perspective Projection</label>
+    </div>
+    <div>
+        <label>Drawing Mode:</label>
+        <input type="radio" id="wire" name="drawtype" value="1" checked><label>Wireframe Mode</label>
+        &nbsp;
+        <input type="radio" id="solid" name="drawtype" value="2"><label>Solid Mode</label><br />
+        <label>Change Object Position:</label><input type="radio" id="objpos" name="posgrp" value="1" checked><label>Object Position</label>
+        &nbsp;
+        <input type="radio" id="campos" name="posgrp" value="2"><label>Camera Position</label><br />
+    </div>
+    <table>
+        <tr>
+            <td><label>Select an OBJ Model File</label></td>
+            <td><input type="file" accept=".obj" id="modelInput"><pre id="modelfileDisplay"></pre></td>
+        </tr>
+        <tr>
+            <td><label>Select a Texture File</label></td>
+            <td><input type="file" accept=".jpg,.png,.gif,.jpeg" id="textureInput"><pre id="texfileDisplay"></pre></td>
+        </tr>
+        <tr>
+            <td><label>Select a Bump Mapping File</label></td>
+            <td><input type="file" accept=".jpg,.png,.gif,.jpeg" id="bumpInput"><pre id="bumpfileDisplay"></pre></td>
+        </tr>
+        <tr>
+            <td>Color Selection:</td>
+            <td><input type="color" id="objcolor" name="objcolor" value="#ff0000"></td>
+        </tr>
+        <tr>
+            <td><label>Texture Alpha</label></td>
+            <td><input type="range" id="textureAlpha" type="range" max="1.0" min="0.0" step="0.01" value="1.0" /></td>
+        </tr>
+        <tr>
+            <td><label>Bump Depth</label></td>
+            <td><input type="range" id="bumpdepth" type="range" max="5.0" min="-5.0" step="0.01" value="0" /></td>
+        </tr>
+        <tr>
+            <td><label>Shininess</label></td>
+            <td><input id="shininess" type="range" min="0.1" max="1.0" value="1" step="0.01" /></td>
+        </tr>
+        <tr>
+            <td><label>Shadow Depth</label></td>
+            <td><input id="shadowdepth" type="range" min="0.1" max="1.0" value="0.5" step="0.01" /></td>
+        </tr>
+        <tr><td colspan="2"><hr size="4" color="#2FA0EC" style="border: outset;"></td></tr>
+    </table>
+    <table border="0" id="shapeChange">
+        <tr><td colspan="2" align="center"><h3>Translation, Rotation, Zoom</h3></td></tr>
+        <tr><td colspan="2"><hr size="4" color="#2FA0EC" style="border: outset;"></td></tr>
+        <tr>
+            <td><label>X Position (press "a" / "d" to change)</label></td>
+            <td><input type="range" id="xpos" name="xpos" min="-5.0" max="5.0" step="0.1"></td>
+        </tr>
+        <tr>
+            <td><label>Y Position (press "w" / "s" to change)</label></td>
+            <td><input type="range" id="ypos" name="ypos" min="-5.0" max="5.0" step="0.1"></td>
+        </tr>
+        <tr>
+            <td><label>Z Position (press "z" / "x" to change)</label></td>
+            <td><input type="range" id="zpos" name="zpos" min="-5.0" max="5.0" step="0.1"></td>
+        </tr>
+        <tr><td colspan="2"><hr size="4" color="#2FA0EC" style="border: outset;"></td></tr>
+        <tr>
+            <td><label>X Rotation (press "h" / "k" to change)</label></td>
+            <td><input type="range" id="xrot" name="xrot" min="-1" max="1" step="0.1"></td>
+        </tr>
+        <tr>
+            <td><label>Y Rotation (press "u" / "j" to change)</label></td>
+        <td><input type="range" id="yrot" name="yrot" min="-1" max="1" step="0.1"></td>
+        </tr>
+        <tr>
+            <td><label>Z Rotation (press "n" / "m" to change)</label></td>
+            <td><input type="range" id="zrot" name="zrot" min="-1" max="1" step="0.1"></td>
+        </tr>
+        <tr><td colspan="2"><hr size="4" color="#2FA0EC" style="border: outset;"></td></tr>
+        <tr>
+        	<td><label>x zoom(press "←" / "→" can change)</label></td>
+        	<td><input type="range" id="xzoom" name="xzoom" min="-1" max="2" step="0.1"></td>
+        </tr>
+        <tr>
+        	<td><label>y zoom(press "↑" / "↓" can change)</label></td>
+        	<td><input type="range" id="yzoom" name="yzoom" min="-1" max="2" step="0.1"></td>
+        </tr>
+        <tr>
+        	<td><label>z zoom(press "," / "." can change)</label></td>
+        	<td><input type="range" id="zzoom" name="zzoom" min="-1" max="2" step="0.1"></td>
+        </tr>
+        <tr><td colspan="2"><hr size="4" color="#2FA0EC" style="border: outset;"></td></tr>
+        <tr class="cameraBox">
+        	<td colspan="2" align="center" style="font-weight: bold;">相机位置</td>
+        </tr>
+        <tr class="cameraBox">
+        	<td><label>theta(press "4" / "6" can change)</label></td>
+        	<td><input type="range" id="theta" name="theta" min="-1" max="1" step="0.1"></td>
+        </tr>
+        <tr class="cameraBox">
+        	<td><label>pri(press "8" / "2" can change)</label></td>
+        	<td><input type="range" id="phi" name="phi" min="-1" max="1" step="0.1"></td>
+        </tr>
+        <tr class="cameraBox">
+        	<td><label>radius(press "+(=)" / "-" can change)</label></td>
+        	<td><input type="range" id="radius" name="radius" min="-10" max="20" step="0.1"></td>
+        </tr>
+        <tr class="cameraBox"><td colspan="2"><hr size="4" color="#2FA0EC" style="border: outset;"></td></tr>
+    </table>
+    <table id="beamChange">
+		<tr><td colspan="10"><h3 style="text-align: center;">光照变换</h3></td></tr>
+        <tr>
+        	<td align='right'>Ambient reflection (ka): </td> 
+        	<td id='slider-ka-value' width='30px'>1.0</td> 
+        	<td><input type='range' id='slider-ka' name='ka' min='0' max='1' step='0.01'></td>
+        	<td align='right'>Ambient Color:</td>
+        	<td colspan='2'><input type='color' id='ka-color' name='kacolor' value='#ff0000'></td>
+        	<td align='center' colspan='2'>Light Position:</td>
+        	<td align='center' colspan='2'>Light Color</td>
+        </tr>
+		<tr>
+				<td align='right'>Diffuse reflection (kd): </td>   
+				<td id='slider-kd-value' width='30px'>1.0</td> 
+				<td><input type='range' id='slider-kd' name='kd' min='0' max='1' step='0.01'></td>
+				<td align='right'>Diffuse Color: </td>
+				<td><input type='color' id='kd-color' name='kdcolor' value='#ffffff'></td>
+				<td align='right' width='30px'>X:</td>
+				<td id='slider-x-value' width='30px' align='center'>1</td>
+				<td width='150px'><input type='range' id='slider-x' name='xvalue' min='-10.0' max='10.0' step='0.1'></td>
+				<td align='right'>Ambient Color:</td>
+				<td><input type='color' id='lt-ambient-color' name='ltamcolor' value='#ffffff'></td>
+			</tr>
+			<tr>
+				<td align='right'>Specular reflection (ks): </td>
+				<td id='slider-ks-value' width='30px'>1.0</td>
+				<td><input type='range' id='slider-ks' name='ks' min='0' max='1' step='0.01'></td>
+				<td align='right'>Specular Color: </td>
+				<td><input type='color' id='ks-color' name='kscolor' value='#ffffff'></td>
+				<td align='right' width='30px'>Y:</td>
+				<td id='slider-y-value' width='30px' align='center'>1</td>
+				<td width='150px'><input type='range' id='slider-y' name='yvalue' min='-10.0' max='10.0' step='0.1'></td>
+				<td align='right'>Diffuse Color:</td>
+				<td><input type='color' id='lt-diffuse-color' name='ltdfcolor' value='#ffffff'></td>
+			</tr>
+			<tr>
+				<td align='right'>Shininess:</td>
+				<td id='slider-sh-value' width='30px'>80</td>
+				<td><input type='range' id='slider-sh' name='sh' min='1' max='500' step='1'></td>
+				<td align='right'>Background Color: </td>
+				<td><input type='color' id='bk-color' name='bkcolor' value='#00ffff'></td>
+				<td align='right' width='30px'>Z:</td>
+				<td id='slider-z-value' width='30px' align='center'>1</td>
+				<td width='150px'><input type='range' id='slider-z' name='zvalue' min='-10.0' max='10.0' step='0.1'></td>
+				<td align='right'>Specular Color:</td>
+				<td><input type='color' id='lt-specular-color' name='ltspcolor' value='#ffffff'></td>
+			</tr>
+		</table>
+	</body>
+</html>
