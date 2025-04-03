@@ -1,0 +1,184 @@
+/* 基础重置 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html,body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+	background-color: #DDA0DD
+}
+body {
+            display: flex;
+            flex-direction: column;
+        }
+.body{
+	
+	width:80%;
+    background: linear-gradient(to right,#DDA0DD,#B0E0E6);
+	margin:auto;
+	flex: 1;
+}
+
+.navbar{
+    background: black;
+    width: 100%;
+
+    /*字体*/
+    color: white;
+    font-family: cursive;
+}
+
+.navbar ul {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    list-style: none;
+}
+
+.navbar a {
+    color: white;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+
+
+.hero {
+    height: 100px;
+    background: linear-gradient(135deg, #6c5ce7, #a363d9);
+    display: flex;
+    justify-content: center;
+    text-align: center;
+    color: white;
+	border-radius: 12px 3px 3px 3px; /* 添加圆弧效果，左上角和右上角有 20px 的圆角 */
+}
+
+
+/*项目Ai*/
+.cta-button {
+    display: inline-block;
+    padding: 1rem 2rem;
+    margin-top: 1rem;
+    background: #ffeaa7;
+    color: #2d3436;
+    border-radius: 5px;
+    text-decoration: none;
+}
+
+/* 项目卡片 */
+.project-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    padding: 2rem;
+}
+
+.project-card {
+    background: white;
+    border-radius: 10px;
+    padding: 1rem;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.skill-bars{
+	padding: 2px;
+	font-family: fangsong;
+}
+
+
+/**/
+
+
+.social {
+            display: flex; /* 开启弹性布局，子元素横向排列 */
+            gap: 10px; /* 可选，设置子元素间距 */
+}
+.social_box{
+	padding: 200px;
+	width: 80px;
+	height: 90px;
+	margin: 20px;
+	padding: 15px 15px;
+	background-color: white;
+	border-radius: 20px;
+}
+
+
+/*还用不上*/
+/* 技能条动画 
+.skill-bars {
+    width: 80%;
+    margin: 2rem auto;
+}
+
+.skill {
+    height: 30px;
+    background: #eee;
+    margin: 1rem 0;
+    border-radius: 5px;
+    overflow: hidden;
+    position: relative;
+}
+
+.skill::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: var(--width);  /* 通过JavaScript动态设置 
+    background: #6c5ce7;
+    transition: width 1s ease-in-out;
+}
+*/
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .project-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+
+
+
+img{
+	
+	width: 80%;
+	margin: 0 auto;
+	display: block;
+	}
+.social_box p{
+	margin: auto;
+	text-align: center;
+	font-size: small;
+	font-family: cursive;
+}
+
+.tail {
+    width: 100%;
+    background-color: #fafafa;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+	
+}
+#tail_small{
+	width:900px;
+	margin: 0 auto;
+	padding:5px 0;
+	background: linear-gradient(to right, #f5f5f5, #A0A0A0,#f5f5f5);
+	display: flex;
+	
+}
+.other{
+	text-align: center;
+	font-family: cursive;
+	width:250px;
+	margin-left:50px
+}
+
