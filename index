@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>海&贼 - 个人主页</title>
+    <link rel="stylesheet" href="style_1_1.css">
+</head>
+<script src="script.js"></script>
+
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <ul>
+            <li><a href="#home">主页</a></li>
+            <li><a href="#projects">项目</a></li>
+            <li><a href="#skills">技能</a></li>
+            <li><a href="#contact">联系</a></li>
+        </ul>
+    </nav>
+    <div class="body">
+
+        <!-- 主页横幅 -->
+        <section id="home" class="hero">
+            <div class="hero-content">
+                <h1>你好，我是<span class="highlight">刘洋</span></h1>
+                <p>开发者 | 技术爱好者</p>
+                <a href="#projects" class="cta-button">查看我的项目</a>
+            </div>
+        </section>
+
+        <!-- 项目展示 -->
+        <section id="projects" class="projects">
+            <h2>我的项目</h2>
+            <div class="project-grid">
+                <!-- 示例项目卡片 -->
+                <div class="project-card">
+                    <img src="PerWeb/assets/images/project1.png" alt="项目1">
+                    <h3>Python数据分析工具</h3>
+                    <p>基于Pandas和Matplotlib的数据可视化系统</p>
+                    <a href="https://www.cnblogs.com/hai-zei/p/18755296" class="code-link">查看代码</a>
+                </div>
+                <!-- 更多项目... -->
+                <div class="project-card">
+                    <img src="PerWeb/assets/images/project2.png" alt="项目2">
+                    <h3>图形学实验处理</h3>
+					<p>基于WebGL的各种实验整合与课程设计</p>
+					<p><a href="indexweb">详细情况</a></p>
+                    <a href="https://github.com/Hai-zei/hai-zei.github.io/tree/main/Curriculum%20design" class="code-link">查看代码</a>
+                </div>PerWeb
+                <div class="project-card">
+                    <img src="PerWeb/assets/images/project1.jpg" alt="项目3">
+                    <h3>Unity 3D游戏开发</h3>
+                    <p>使用 Unity进行3D塔防游戏开发</p>
+                    <a href="#" class="code-link">查看代码</a>
+                </div>
+                <div class="project-card">
+                    <img src="PerWeb/assets/images/project1.jpg" alt="项目4">
+                    <h3>ToDo-List app开发</h3>
+                    <p>前端采用vue框架，后端使用node.js进行app开发</p>
+                    <a href="https://github.com/Hai-zei/To-do-List" class="code-link">查看代码</a>
+                </div>
+				
+				<div class="project-card">
+				    <img src="PerWeb/assets/images/project5.png" alt="项目4">
+				    <h3>Python小游戏联系</h3>
+				    <p>运用pygame从github上练习python开发</p>
+				    <a href="https://github.com/Hai-zei/Python-Platformer/blob/main/assets/mian.py" class="code-link">查看代码</a>
+				</div>
+				
+				<div class="project-card">
+				    <img src="PerWeb/assets/images/project6.png" alt="项目4">
+				    <h3>C++ 小游戏联系</h3>
+				    <p>网上仿作C++简单游戏</p>
+				    <a href="https://github.com/Hai-zei/TestWork/blob/main/demo/main.cpp" class="code-link">查看代码</a>
+				</div>
+                <!-- 更多项目... -->
+            </div>
+            <div class="project-grid">
+                <div class="project-card">
+                    <img src="PerWeb/assets/images/project.jpg" alt="学习">
+                    <h3>学习经验</h3>
+                    <h6>专业课程：</h6>
+                    <p id="font" style="font-family:monospace">程序设计基础、数据结构与算法、数据库系统原理、操作系统、计算机网络、软件工程、计算机组成原理、编译原理</p>
+                    <h6>选修课程：</h6>
+                    <p id="font" style="font-family:monospace">Web程序设计、数值分析、多媒体技术、人工智能导论、
+                        数据库管理与开发、软件测试、计算机图形学、人机交互技术、虚拟现实技术与应用</p>
+                    <h6>自我学习：</h6>
+                    <p id="font" style="font-family:monospace">Phython开发、数据分析、视频编辑</p>
+                    <a href="#" class="code-link">查看代码</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- 技能展示 -->
+        <section id="skills" class="skills">
+            <h2>技术栈</h2>
+            <div class="skill-bars">语言：C、C++、Python、Html、Css、CET-6</div>
+            <div class="skill-bars">技能：能够熟练使用Matlab、能够使用Python对数据进行分析与可视化处理、能使用所掌握的语言独立开发一些基础项目</div>
+            <div class="skill-bars">思维：具有良好的开发思维、有着自学的想法对事物好奇与坚持</div>
+            <!--
+            <div class="skill-bars">
+                <span>Python</span><div class="skill" data-level="90"></div>
+                <div class="skill" data-level="85"><span>JavaScript</span></div>
+                <div class="skill" data-level="80"><span>C++</span></div>
+            </div>
+            -->
+        </section>
+
+
+        <h2>联系我</h2>
+        <!-- 联系表单 -->
+        <section id="contact" class="contact">
+            <div class="social">
+                <div id="black"></div>
+                <div class="social_box">
+                    <img src="PerWeb/projects/img/QQ.jpg" />
+                    <p>QQ</p>
+                </div>
+                <div class="social_box">
+                    <img src="PerWeb/projects/img/wechat.png" />
+                    <p>wechat</p>
+                </div>
+                <div class="social_box">
+                    <img src="PerWeb/projects/img/github.png" />
+                    <p>github</p>
+                </div>
+                <div class="social_box">
+                    <img src="PerWeb/projects/img/boke.png" />
+                    <p>博客园</p>
+                </div>
+                <div id="black"></div>
+            </div>
+        </section>
+    </div>
+    <div class="tail">
+        <div id="tail_small">
+            <div class="other">该页面使用html以及CSS样式</div>
+            <div class="other"> Since 2025.4.1 &copy Hai-zei</div>
+            <div class="other"> 谢谢观看，希望能够获得你们正确的意见</div>
+        </div>
+    </div>
+</body>
+
+</html>    
